@@ -7,10 +7,11 @@ set( CMAKE_CXX_FLAGS "-std=c++11 -O3" )
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules )
 
 # Eigen
-include_directories( "/usr/include/eigen3" )
+include_directories( "/usr/local/include/eigen3" )
 
 # sophus 
 find_package( Sophus REQUIRED )
+set(Sophus_LIBRARIES libSophus.so)
 include_directories( ${Sophus_INCLUDE_DIRS} )
 
 # g2o 
