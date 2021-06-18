@@ -151,12 +151,15 @@ int main(int argc, char **argv)
     Mat depth(height, width, CV_64F, init_depth);    // 深度图
     Mat depth_cov(height, width, CV_64F, init_cov2); // 深度图方差
 
-    for (int index = 1; index < color_image_files.size(); index++)
+    std::cout << "color image files size: " << color_image_files.size() <<endl;
+    for (int index = 1; index < color_image_files.size() - 1; index++)
     {
         cout << "*** loop " << index << " ***" << endl;
         Mat curr = imread(color_image_files[index], 0);
         if (curr.data == nullptr)
             continue;
+        
+        
         SE3 pose_curr_TWC = poses_TWC[index];
         SE3 pose_T_C_R = pose_curr_TWC.inverse() * pose_ref_TWC; // 坐标转换关系： T_C_W * T_W_R = T_C_R
         update(ref, curr, pose_T_C_R, depth, depth_cov);
@@ -353,6 +356,9 @@ bool updateDepthFilter(
     A[1] = -A[2];
     A[3] = -f2.dot(f2);
     double d = A[0] * A[3] - A[1] * A[2];
+
+    // lambdavec[0]: 代表d_ref
+    // lamddavec[1]: 代表d_cur
     Vector2d lambdavec =
         Vector2d(A[3] * b(0, 0) - A[1] * b(1, 0),
                  -A[2] * b(0, 0) + A[0] * b(1, 0)) /
