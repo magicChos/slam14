@@ -82,6 +82,7 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions)
     if (use_quaternions)
     {
         // Switch the angle-axis rotations to quaternions.
+        // 四元数 4 + 平移 3 + 相机内参 3 = 10
         num_parameters_ = 10 * num_cameras_ + 3 * num_points_;
         double *quaternion_parameters = new double[num_parameters_];
         double *original_cursor = parameters_;
@@ -224,6 +225,8 @@ void BALProblem::CameraToAngelAxisAndCenter(const double *camera,
     {
         angle_axis_ref = ConstVectorRef(camera, 3);
     }
+
+    std::cout << "angle_axis_ref: " << angle_axis_ref << std::endl;
 
     // c = -R't
     Eigen::VectorXd inverse_rotation = -angle_axis_ref;
