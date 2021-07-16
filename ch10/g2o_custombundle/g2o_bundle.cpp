@@ -233,23 +233,23 @@ void SolveProblem(const char *filename, const BundleParams &params)
 
     g2o::SparseOptimizer optimizer;
     SetSolverOptionsFromFlags(&bal_problem, params, &optimizer);
-    // BuildProblem(&bal_problem, &optimizer, params);
+    BuildProblem(&bal_problem, &optimizer, params);
 
-    // std::cout << "begin optimizaiton .." << std::endl;
-    // // perform the optimizaiton
-    // optimizer.initializeOptimization();
-    // optimizer.setVerbose(true);
-    // optimizer.optimize(params.num_iterations);
+    std::cout << "begin optimizaiton .." << std::endl;
+    // perform the optimizaiton
+    optimizer.initializeOptimization();
+    optimizer.setVerbose(true);
+    optimizer.optimize(params.num_iterations);
 
-    // std::cout << "optimization complete.. " << std::endl;
-    // // write the optimized data into BALProblem class
-    // WriteToBALProblem(&bal_problem, &optimizer);
+    std::cout << "optimization complete.. " << std::endl;
+    // write the optimized data into BALProblem class
+    WriteToBALProblem(&bal_problem, &optimizer);
 
-    // // write the result into a .ply file.
-    // if (!params.final_ply.empty())
-    // {
-    //     bal_problem.WriteToPLYFile(params.final_ply);
-    // }
+    // write the result into a .ply file.
+    if (!params.final_ply.empty())
+    {
+        bal_problem.WriteToPLYFile(params.final_ply);
+    }
 }
 
 int main(int argc, char **argv)
