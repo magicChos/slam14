@@ -46,6 +46,7 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions)
     };
 
     // This wil die horribly on invalid files. Them's the breaks.
+    // 相机数量(16)，路标数量(22106)，总的观测数量(83718)
     FscanfOrDie(fptr, "%d", &num_cameras_);
     FscanfOrDie(fptr, "%d", &num_points_);
     FscanfOrDie(fptr, "%d", &num_observations_);
@@ -54,10 +55,17 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions)
               << " " << num_points_
               << " " << num_observations_;
 
+    // 分配空间 sizeof(int) * 83718
     point_index_ = new int[num_observations_];
+    // 分配空间 sizeof(int) * 83718
     camera_index_ = new int[num_observations_];
+    // 分配空间 sizeof(int) * 2 * 83718
+    // 第0个位置存储相机id，第1个位置存储路标点id , (2 , 3)存储观察到的像素点坐标
     observations_ = new double[2 * num_observations_];
 
+    // 分配空间 9 * 16 + 3 * 22106
+    // (0 ,143) 存储16个相机参数信息，每个相机参数信息包含9个参数，分别表示为3个旋转向量，3个平移向量，焦距1个，2个畸变系数
+    // （144, ～） 存储路标点的在世界坐标系下的三维点
     num_parameters_ = 9 * num_cameras_ + 3 * num_points_;
     parameters_ = new double[num_parameters_];
 
@@ -194,8 +202,9 @@ void BALProblem::WriteToPLYFile(const std::string &filename) const
     {
         const double *camera = cameras() + camera_block_size() * i;
         CameraToAngelAxisAndCenter(camera, angle_axis, center);
+        std::cout << center[0] << " , " << center[1] << " , " << center[2] << std::endl;
         of << center[0] << ' ' << center[1] << ' ' << center[2]
-           << "0 255 0" << '\n';
+           << " 0 255 0" << '\n';
     }
 
     // Export the structure (i.e. 3D Points) as white points.
@@ -226,13 +235,19 @@ void BALProblem::CameraToAngelAxisAndCenter(const double *camera,
         angle_axis_ref = ConstVectorRef(camera, 3);
     }
 
-    std::cout << "angle_axis_ref: " << angle_axis_ref << std::endl;
-
     // c = -R't
+    // Pc = RPw + T
+    // Pw = R'(Pc - T)
+    // 已知Pc = (0,0,0)T
+    // Pw = -R'T
+    // R表示世界坐标系到相机坐标系的旋转矩阵
+    // T表示平移量
+    // 轴角取负号表示矩阵的逆
     Eigen::VectorXd inverse_rotation = -angle_axis_ref;
     AngleAxisRotatePoint(inverse_rotation.data(),
                          camera + camera_block_size() - 6,
                          center);
+
     VectorRef(center, 3) *= -1.0;
 }
 
@@ -259,7 +274,10 @@ void BALProblem::Normalize()
 {
     // Compute the marginal median of the geometry
     std::vector<double> tmp(num_points_);
+    // 保存点云的中点坐标
     Eigen::Vector3d median;
+
+    // 指向空间三维点
     double *points = mutable_points();
     for (int i = 0; i < 3; ++i)
     {
@@ -267,15 +285,20 @@ void BALProblem::Normalize()
         {
             tmp[j] = points[3 * j + i];
         }
+
+        // 分别计算x,y,z的中值
         median(i) = Median(&tmp);
     }
 
     for (int i = 0; i < num_points_; ++i)
     {
         VectorRef point(points + 3 * i, 3);
+        Eigen::Vector3d p = point;
+        // 1 范数，代表所有元素的绝对值之和
         tmp[i] = (point - median).lpNorm<1>();
     }
 
+    // 中值绝对值偏差
     const double median_absolute_deviation = Median(&tmp);
 
     // Scale so that the median absolute deviation of the resulting
@@ -311,6 +334,7 @@ void BALProblem::Perturb(const double rotation_sigma,
     assert(rotation_sigma >= 0.0);
     assert(translation_sigma >= 0.0);
 
+    // 指向空间的三维点
     double *points = mutable_points();
     if (point_sigma > 0)
     {
