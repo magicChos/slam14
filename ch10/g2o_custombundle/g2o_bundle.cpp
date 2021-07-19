@@ -35,6 +35,8 @@ using namespace std;
 
 typedef Eigen::Map<Eigen::VectorXd> VectorRef;
 typedef Eigen::Map<const Eigen::VectorXd> ConstVectorRef;
+
+// 构建图优化，两个顶点的维度为9和3
 typedef g2o::BlockSolver<g2o::BlockSolverTraits<9, 3>> BalBlockSolver;
 
 // set up the vertexs and edges for the bundle adjustment.
@@ -69,6 +71,7 @@ void BuildProblem(const BALProblem *bal_problem, g2o::SparseOptimizer *optimizer
         pPoint->setId(j + num_cameras);   // each vertex should have an unique id, no matter it is a camera vertex, or a point vertex
 
         // remeber to add vertex into optimizer..
+        // 主要是为了把变量分为相机位姿和特征点两部分
         pPoint->setMarginalized(true);
         optimizer->addVertex(pPoint);
     }
@@ -86,6 +89,7 @@ void BuildProblem(const BALProblem *bal_problem, g2o::SparseOptimizer *optimizer
 
         if (params.robustify)
         {
+            // 设置鲁棒核函数
             g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
             rk->setDelta(1.0);
             bal_edge->setRobustKernel(rk);
@@ -94,6 +98,7 @@ void BuildProblem(const BALProblem *bal_problem, g2o::SparseOptimizer *optimizer
         bal_edge->setVertex(0, dynamic_cast<VertexCameraBAL *>(optimizer->vertex(camera_id)));
         bal_edge->setVertex(1, dynamic_cast<VertexPointBAL *>(optimizer->vertex(point_id)));
         bal_edge->setInformation(Eigen::Matrix2d::Identity());
+        // 设置观测数值
         bal_edge->setMeasurement(Eigen::Vector2d(observations[2 * i + 0], observations[2 * i + 1]));
 
         optimizer->addEdge(bal_edge);

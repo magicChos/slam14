@@ -59,6 +59,8 @@ public:
     }
 };
 
+// 2： 误差维度
+// Eigen::Vector2d: 
 class EdgeObservationBAL : public g2o::BaseBinaryEdge<2, Eigen::Vector2d,VertexCameraBAL, VertexPointBAL>
 {
 public:
