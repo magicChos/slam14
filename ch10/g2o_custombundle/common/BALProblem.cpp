@@ -273,6 +273,7 @@ void BALProblem::AngleAxisAndCenterToCamera(const double *angle_axis,
 void BALProblem::Normalize()
 {
     // Compute the marginal median of the geometry
+    // 计算几何边缘的中位数
     std::vector<double> tmp(num_points_);
     // 保存点云的中点坐标
     Eigen::Vector3d median;
