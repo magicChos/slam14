@@ -151,16 +151,16 @@ int main(int argc, char **argv)
     Mat depth(height, width, CV_64F, init_depth);    // 深度图
     Mat depth_cov(height, width, CV_64F, init_cov2); // 深度图方差
 
-    std::cout << "color image files size: " << color_image_files.size() <<endl;
+    std::cout << "color image files size: " << color_image_files.size() << endl;
     for (int index = 1; index < color_image_files.size() - 1; index++)
     {
         cout << "*** loop " << index << " ***" << endl;
         Mat curr = imread(color_image_files[index], 0);
         if (curr.data == nullptr)
             continue;
-        
-        
+
         SE3 pose_curr_TWC = poses_TWC[index];
+        // 参考帧到当前帧的变换
         SE3 pose_T_C_R = pose_curr_TWC.inverse() * pose_ref_TWC; // 坐标转换关系： T_C_W * T_W_R = T_C_R
         update(ref, curr, pose_T_C_R, depth, depth_cov);
         plotDepth(depth);
@@ -342,7 +342,7 @@ bool updateDepthFilter(
     Vector3d f_curr = px2cam(pt_curr);
     f_curr.normalize();
 
-    // 方程
+    // 方程 参考https://blog.csdn.net/YMWM_/article/details/117415070
     // d_ref * f_ref = d_cur * ( R_RC * f_cur ) + t_RC
     // => [ f_ref^T f_ref, -f_ref^T f_cur ] [d_ref] = [f_ref^T t]
     //    [ f_cur^T f_ref, -f_cur^T f_cur ] [d_cur] = [f_cur^T t]
