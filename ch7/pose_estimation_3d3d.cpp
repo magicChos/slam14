@@ -1,3 +1,13 @@
+/************************************************************************************************
+@filename    :pose_estimation_3d3d.cpp
+@brief       :SVD方法求解ICP
+@time        :2021/12/08 00:06:12
+@author      :hscoder
+@versions    :1.0
+@email       :hscoder@163.com
+@usage       :
+***********************************************************************************************/
+
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
@@ -220,6 +230,8 @@ void pose_estimation_3d3d(
         p1 += pts1[i];
         p2 += pts2[i];
     }
+
+    // 质心
     p1 = Point3f(Vec3f(p1) / N);
     p2 = Point3f(Vec3f(p2) / N);
     vector<Point3f> q1(N), q2(N); // remove the center
@@ -269,15 +281,20 @@ void bundleAdjustment(
     Mat &R, Mat &t)
 {
     // 初始化g2o
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> Block;                                // pose维度为 6, landmark 维度为 3
-    Block::LinearSolverType *linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>(); // 线性方程求解器
-    Block *solver_ptr = new Block(linearSolver);                                                 // 矩阵块求解器
+
+    // pose维度为 6, landmark 维度为 3
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> Block;   
+    // 线性方程求解器                             
+    Block::LinearSolverType *linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>(); 
+    // 矩阵块求解器
+    Block *solver_ptr = new Block(linearSolver);                                                
     g2o::OptimizationAlgorithmGaussNewton *solver = new g2o::OptimizationAlgorithmGaussNewton(solver_ptr);
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
 
     // vertex
-    g2o::VertexSE3Expmap *pose = new g2o::VertexSE3Expmap(); // camera pose
+    // camera pose
+    g2o::VertexSE3Expmap *pose = new g2o::VertexSE3Expmap(); 
     pose->setId(0);
     pose->setEstimate(g2o::SE3Quat(
         Eigen::Matrix3d::Identity(),
