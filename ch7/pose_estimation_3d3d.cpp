@@ -47,6 +47,10 @@ void bundleAdjustment(
     Mat &R, Mat &t);
 
 // g2o edge
+//-----------------------------------------------------------
+//                                                          |
+//                                                          V
+//--------------------------------------------------------  观测值维度，观测值类型，顶点类型
 class EdgeProjectXYZRGBDPoseOnly : public g2o::BaseUnaryEdge<3, Eigen::Vector3d, g2o::VertexSE3Expmap>
 {
 public:
@@ -68,6 +72,8 @@ public:
         double x = xyz_trans[0];
         double y = xyz_trans[1];
         double z = xyz_trans[2];
+
+        // 旋转在前，平移在后
 
         _jacobianOplusXi(0, 0) = 0;
         _jacobianOplusXi(0, 1) = -z;
@@ -284,14 +290,17 @@ void bundleAdjustment(
 
     // pose维度为 6, landmark 维度为 3
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> Block;   
-    // 线性方程求解器                             
+    // step1 定义线性方程求解器                             
     Block::LinearSolverType *linearSolver = new g2o::LinearSolverEigen<Block::PoseMatrixType>(); 
-    // 矩阵块求解器
-    Block *solver_ptr = new Block(linearSolver);                                                
+    // step2 定义矩阵块求解器
+    Block *solver_ptr = new Block(linearSolver);     
+    // step3 创建总的求解器                                           
     g2o::OptimizationAlgorithmGaussNewton *solver = new g2o::OptimizationAlgorithmGaussNewton(solver_ptr);
+    // step4 创建终极大boss稀疏求解器
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
 
+    // step5 定义顶点和边
     // vertex
     // camera pose
     g2o::VertexSE3Expmap *pose = new g2o::VertexSE3Expmap(); 
