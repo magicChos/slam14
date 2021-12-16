@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         cout << "file " << argv[1] << " does not exist." << endl;
         return 1;
     }
-
+    // 优化变量的维度和误差的维度
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> Block;                                  // 6x6 BlockSolver
     Block::LinearSolverType *linearSolver = new g2o::LinearSolverCholmod<Block::PoseMatrixType>(); // 线性方程求解器
     Block *solver_ptr = new Block(linearSolver);                                                   // 矩阵块求解器
@@ -77,6 +77,7 @@ int main(int argc, char **argv)
 
     cout << "prepare optimizing ..." << endl;
     optimizer.setVerbose(true);
+    // 设置优化参数，开始执行优化
     optimizer.initializeOptimization();
     cout << "calling optimizing ..." << endl;
     optimizer.optimize(30);

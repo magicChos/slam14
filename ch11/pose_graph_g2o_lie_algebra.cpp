@@ -31,6 +31,9 @@ typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 Matrix6d JRInv(SE3 e)
 {
     Matrix6d J;
+    // 11-10
+    //.log()使用对数映射得到李代数
+    // SO3::hat()得到李代数的反对称矩阵
     J.block(0, 0, 3, 3) = SO3::hat(e.so3().log());
     J.block(0, 3, 3, 3) = SO3::hat(e.translation());
     J.block(3, 0, 3, 3) = Eigen::Matrix3d::Zero(3, 3);
@@ -40,6 +43,7 @@ Matrix6d JRInv(SE3 e)
 }
 // 李代数顶点
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
+// 6:优化变量的维度 ，SE3:数据类型
 class VertexSE3LieAlgebra : public g2o::BaseVertex<6, SE3>
 {
 public:
@@ -78,6 +82,7 @@ public:
 };
 
 // 两个李代数节点之边
+// 6:误差的维度，SE3:测量值的类型
 class EdgeSE3LieAlgebra : public g2o::BaseBinaryEdge<6, SE3, VertexSE3LieAlgebra, VertexSE3LieAlgebra>
 {
 public:
@@ -153,14 +158,20 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> Block;                                  // BlockSolver为6x6
+    // 第一6为优化变量维度
+    // 第二个6为输出的误差维度
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> Block;
+    // BlockSolver为6x6
+    // step1 创建线性求解器
     Block::LinearSolverType *linearSolver = new g2o::LinearSolverCholmod<Block::PoseMatrixType>(); // 线性方程求解器
-    Block *solver_ptr = new Block(linearSolver);                                                   // 矩阵块求解器
+    // step2 创建block solver
+    Block *solver_ptr = new Block(linearSolver);
+    // step3 创建总的优化器
     g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     // 试试G-N或Dogleg？
     // g2o::OptimizationAlgorithmDogleg* solver = new g2o::OptimizationAlgorithmDogleg( solver_ptr );
     // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton ( solver_ptr );
-
+    // step4 终极大的稀疏优化器
     g2o::SparseOptimizer optimizer; // 图模型
     optimizer.setAlgorithm(solver); // 设置求解器
 
