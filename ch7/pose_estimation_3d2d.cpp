@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 
     // 建立3D点
     Mat d1 = imread(argv[3], IMREAD_UNCHANGED); // 深度图为16位无符号数，单通道图像
+    // 内参
     Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
     vector<Point3f> pts_3d;
     vector<Point2f> pts_2d;
@@ -153,6 +154,7 @@ void bundleAdjustment(
     Block::LinearSolverType *linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>(); // 线性方程求解器
     Block *solver_ptr = new Block(linearSolver);                                                   // 矩阵块求解器
     g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    // 创建稀疏优化器
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
 
