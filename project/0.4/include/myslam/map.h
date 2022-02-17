@@ -24,20 +24,20 @@
 #include "myslam/frame.h"
 #include "myslam/mappoint.h"
 
-namespace myslam
-{
+namespace myslam {
 class Map
 {
 public:
     typedef shared_ptr<Map> Ptr;
-    unordered_map<unsigned long, MapPoint::Ptr >  map_points_;        // all landmarks
-    unordered_map<unsigned long, Frame::Ptr >     keyframes_;         // all key-frames
+    unordered_map<unsigned long, MapPoint::Ptr> map_points_; // all landmarks
+    unordered_map<unsigned long, Frame::Ptr> keyframes_;     // all key-frames
 
-    Map() {}
-    
-    void insertKeyFrame( Frame::Ptr frame );
-    void insertMapPoint( MapPoint::Ptr map_point );
+    Map()
+    {}
+
+    void insertKeyFrame(Frame::Ptr frame);
+    void insertMapPoint(MapPoint::Ptr map_point);
 };
-}
+} // namespace myslam
 
 #endif // MAP_H
