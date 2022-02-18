@@ -42,9 +42,12 @@ typedef g2o::BlockSolver<g2o::BlockSolverTraits<9, 3>> BalBlockSolver;
 // set up the vertexs and edges for the bundle adjustment.
 void BuildProblem(const BALProblem *bal_problem, g2o::SparseOptimizer *optimizer, const BundleParams &params)
 {
+    // 路标点数量
     const int num_points = bal_problem->num_points();
     const int num_cameras = bal_problem->num_cameras();
+    // 9 or 10
     const int camera_block_size = bal_problem->camera_block_size();
+    // 3
     const int point_block_size = bal_problem->point_block_size();
 
     // Set camera vertex with initial value in the dataset.
@@ -259,7 +262,6 @@ void SolveProblem(const char *filename, const BundleParams &params)
 
 int main(int argc, char **argv)
 {
-
     BundleParams params(argc, argv); // set the parameters here.
 
     if (params.input.empty())

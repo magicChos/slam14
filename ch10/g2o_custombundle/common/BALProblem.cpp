@@ -316,6 +316,8 @@ void BALProblem::Normalize()
 
     double *cameras = mutable_cameras();
     double angle_axis[3];
+
+    // 相机中心点在世界坐标系下的坐标
     double center[3];
     for (int i = 0; i < num_cameras_; ++i)
     {
