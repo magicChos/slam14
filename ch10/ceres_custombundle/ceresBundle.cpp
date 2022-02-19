@@ -1,6 +1,6 @@
-#include <iostream>
-#include <fstream>
 #include "ceres/ceres.h"
+#include <fstream>
+#include <iostream>
 
 #include "SnavelyReprojectionError.h"
 #include "common/BALProblem.h"
@@ -8,15 +8,22 @@
 
 using namespace ceres;
 
-void SetLinearSolver(ceres::Solver::Options *options, const BundleParams &params)
+void SetLinearSolver(ceres::Solver::Options *options,
+                     const BundleParams &params)
 {
-    CHECK(ceres::StringToLinearSolverType(params.linear_solver, &options->linear_solver_type));
-    CHECK(ceres::StringToSparseLinearAlgebraLibraryType(params.sparse_linear_algebra_library, &options->sparse_linear_algebra_library_type));
-    CHECK(ceres::StringToDenseLinearAlgebraLibraryType(params.dense_linear_algebra_library, &options->dense_linear_algebra_library_type));
+    CHECK(ceres::StringToLinearSolverType(params.linear_solver,
+                                          &options->linear_solver_type));
+    CHECK(ceres::StringToSparseLinearAlgebraLibraryType(
+        params.sparse_linear_algebra_library,
+        &options->sparse_linear_algebra_library_type));
+    CHECK(ceres::StringToDenseLinearAlgebraLibraryType(
+        params.dense_linear_algebra_library,
+        &options->dense_linear_algebra_library_type));
     options->num_linear_solver_threads = params.num_threads;
 }
 
-void SetOrdering(BALProblem *bal_problem, ceres::Solver::Options *options, const BundleParams &params)
+void SetOrdering(BALProblem *bal_problem, ceres::Solver::Options *options,
+                 const BundleParams &params)
 {
     const int num_points = bal_problem->num_points();
     const int point_block_size = bal_problem->point_block_size();
@@ -51,19 +58,23 @@ void SetMinimizerOptions(Solver::Options *options, const BundleParams &params)
     // options->eta = params.eta;
     // options->max_solver_time_in_seconds = params.max_solver_time;
 
+    std::cout << "@test 信赖区域下降策略: " << params.trust_region_strategy << std::endl;
+
     CHECK(StringToTrustRegionStrategyType(params.trust_region_strategy,
                                           &options->trust_region_strategy_type));
 }
 
 void SetSolverOptionsFromFlags(BALProblem *bal_problem,
-                               const BundleParams &params, Solver::Options *options)
+                               const BundleParams &params,
+                               Solver::Options *options)
 {
     SetMinimizerOptions(options, params);
     SetLinearSolver(options, params);
     SetOrdering(bal_problem, options, params);
 }
 
-void BuildProblem(BALProblem *bal_problem, Problem *problem, const BundleParams &params)
+void BuildProblem(BALProblem *bal_problem, Problem *problem,
+                  const BundleParams &params)
 {
     const int point_block_size = bal_problem->point_block_size();
     const int camera_block_size = bal_problem->camera_block_size();
@@ -82,7 +93,8 @@ void BuildProblem(BALProblem *bal_problem, Problem *problem, const BundleParams 
         // Each Residual block takes a point and a camera as input
         // and outputs a 2 dimensional Residual
 
-        cost_function = SnavelyReprojectionError::Create(observations[2 * i + 0], observations[2 * i + 1]);
+        cost_function = SnavelyReprojectionError::Create(observations[2 * i + 0],
+                                                         observations[2 * i + 1]);
 
         // If enabled use Huber's loss function.
         LossFunction *loss_function = params.robustify ? new HuberLoss(1.0) : NULL;
@@ -103,9 +115,11 @@ void SolveProblem(const char *filename, const BundleParams &params)
 
     // show some information here ...
     std::cout << "bal problem file loaded..." << std::endl;
-    std::cout << "bal problem have " << bal_problem.num_cameras() << " cameras and "
-              << bal_problem.num_points() << " points. " << std::endl;
-    std::cout << "Forming " << bal_problem.num_observations() << " observatoins. " << std::endl;
+    std::cout << "bal problem have " << bal_problem.num_cameras()
+              << " cameras and " << bal_problem.num_points() << " points. "
+              << std::endl;
+    std::cout << "Forming " << bal_problem.num_observations() << " observatoins. "
+              << std::endl;
 
     // store the initial 3D cloud points and camera pose..
     if (!params.initial_ply.empty())
@@ -139,7 +153,8 @@ void SolveProblem(const char *filename, const BundleParams &params)
     // write the result into a .ply file.
     if (!params.final_ply.empty())
     {
-        bal_problem.WriteToPLYFile(params.final_ply); // pay attention to this: ceres doesn't copy the value into optimizer, but implement on raw data!
+        bal_problem.WriteToPLYFile(params.final_ply); // pay attention to this: ceres doesn't copy the
+                                                      // value into optimizer, but implement on raw data!
     }
 }
 
