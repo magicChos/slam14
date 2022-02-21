@@ -52,6 +52,11 @@ public:
 
     virtual void setToOriginImpl() {}
 
+    /**
+     * @brief 更新顶点的_estimate
+     * 
+     * @param update 
+     */
     virtual void oplusImpl(const double *update)
     {
         Eigen::Vector3d::ConstMapType v(update);
@@ -65,8 +70,7 @@ class EdgeObservationBAL : public g2o::BaseBinaryEdge<2, Eigen::Vector2d, Vertex
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-    EdgeObservationBAL()
-    {}
+    EdgeObservationBAL() {}
 
     virtual bool read(std::istream & /*is*/)
     {
@@ -78,11 +82,16 @@ public:
         return false;
     }
 
+    /**
+     * @brief 计算_error值
+     * 
+     */
     virtual void computeError() override // The virtual function comes from the Edge base class. Must define if you use edge.
     {
         const VertexCameraBAL *cam = static_cast<const VertexCameraBAL *>(vertex(0));
         const VertexPointBAL *point = static_cast<const VertexPointBAL *>(vertex(1));
 
+        // estimate()得到顶点的值
         (*this)(cam->estimate().data(), point->estimate().data(), _error.data());
     }
 
@@ -97,6 +106,10 @@ public:
         return true;
     }
 
+    /**
+     * @brief 单顶点的计算_jacobianOplusXi矩阵，双顶点的还要计算_jacobianOplusXj矩阵
+     * 
+     */
     virtual void linearizeOplus() override
     {
         // use numeric Jacobians
