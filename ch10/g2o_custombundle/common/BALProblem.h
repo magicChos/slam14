@@ -112,6 +112,7 @@ private:
                                     const double *center,
                                     double *camera) const;
 
+    // 相机数量
     int num_cameras_;
     // 路标点
     int num_points_;
