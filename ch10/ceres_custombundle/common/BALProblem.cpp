@@ -27,10 +27,17 @@ void PerturbPoint3(const double sigma, double *point)
         point[i] += RandNormal() * sigma;
 }
 
+/**
+ * @brief 计算中位数
+ * 
+ * @param data 
+ * @return double 
+ */
 double Median(std::vector<double> *data)
 {
     int n = data->size();
     std::vector<double>::iterator mid_point = data->begin() + n / 2;
+    // 获取第k个元素
     std::nth_element(data->begin(), mid_point, data->end());
     return *mid_point;
 }
@@ -46,6 +53,7 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions)
     };
 
     // This wil die horribly on invalid files. Them's the breaks.
+    // 读取第一行数据
     FscanfOrDie(fptr, "%d", &num_cameras_);
     FscanfOrDie(fptr, "%d", &num_points_);
     FscanfOrDie(fptr, "%d", &num_observations_);

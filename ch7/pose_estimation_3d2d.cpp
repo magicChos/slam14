@@ -1,35 +1,32 @@
-#include <iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <g2o/core/base_vertex.h>
+#include <chrono>
 #include <g2o/core/base_unary_edge.h>
+#include <g2o/core/base_vertex.h>
 #include <g2o/core/block_solver.h>
 #include <g2o/core/optimization_algorithm_levenberg.h>
 #include <g2o/solvers/csparse/linear_solver_csparse.h>
 #include <g2o/types/sba/types_six_dof_expmap.h>
-#include <chrono>
+#include <iostream>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 using namespace std;
 using namespace cv;
 
-void find_feature_matches(
-    const Mat &img_1, const Mat &img_2,
-    std::vector<KeyPoint> &keypoints_1,
-    std::vector<KeyPoint> &keypoints_2,
-    std::vector<DMatch> &matches);
+void find_feature_matches(const Mat &img_1, const Mat &img_2,
+                          std::vector<KeyPoint> &keypoints_1,
+                          std::vector<KeyPoint> &keypoints_2,
+                          std::vector<DMatch> &matches);
 
 // 像素坐标转相机归一化坐标
 Point2d pixel2cam(const Point2d &p, const Mat &K);
 
-void bundleAdjustment(
-    const vector<Point3f> points_3d,
-    const vector<Point2f> points_2d,
-    const Mat &K,
-    Mat &R, Mat &t);
+void bundleAdjustment(const vector<Point3f> points_3d,
+                      const vector<Point2f> points_2d, const Mat &K, Mat &R,
+                      Mat &t);
 
 int main(int argc, char **argv)
 {
@@ -55,7 +52,8 @@ int main(int argc, char **argv)
     vector<Point2f> pts_2d;
     for (DMatch m : matches)
     {
-        ushort d = d1.ptr<unsigned short>(int(keypoints_1[m.queryIdx].pt.y))[int(keypoints_1[m.queryIdx].pt.x)];
+        ushort d = d1.ptr<unsigned short>(
+            int(keypoints_1[m.queryIdx].pt.y))[int(keypoints_1[m.queryIdx].pt.x)];
         if (d == 0) // bad depth
             continue;
         float dd = d / 5000.0;
@@ -67,7 +65,8 @@ int main(int argc, char **argv)
     cout << "3d-2d pairs: " << pts_3d.size() << endl;
 
     Mat r, t;
-    solvePnP(pts_3d, pts_2d, K, Mat(), r, t, false); // 调用OpenCV 的 PnP 求解，可选择EPNP，DLS等方法
+    solvePnP(pts_3d, pts_2d, K, Mat(), r, t,
+             false); // 调用OpenCV 的 PnP 求解，可选择EPNP，DLS等方法
     Mat R;
     cv::Rodrigues(r, R); // r为旋转向量形式，用Rodrigues公式转换为矩阵
 
@@ -93,8 +92,10 @@ void find_feature_matches(const Mat &img_1, const Mat &img_2,
     Ptr<DescriptorExtractor> descriptor = ORB::create();
     // use this if you are in OpenCV2
     // Ptr<FeatureDetector> detector = FeatureDetector::create ( "ORB" );
-    // Ptr<DescriptorExtractor> descriptor = DescriptorExtractor::create ( "ORB" );
-    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+    // Ptr<DescriptorExtractor> descriptor = DescriptorExtractor::create ( "ORB"
+    // );
+    Ptr<DescriptorMatcher> matcher =
+        DescriptorMatcher::create("BruteForce-Hamming");
     //-- 第一步:检测 Oriented FAST 角点位置
     detector->detect(img_1, keypoints_1);
     detector->detect(img_2, keypoints_2);
@@ -111,7 +112,8 @@ void find_feature_matches(const Mat &img_1, const Mat &img_2,
     //-- 第四步:匹配点对筛选
     double min_dist = 10000, max_dist = 0;
 
-    //找出所有匹配之间的最小距离和最大距离, 即是最相似的和最不相似的两组点之间的距离
+    //找出所有匹配之间的最小距离和最大距离,
+    //即是最相似的和最不相似的两组点之间的距离
     for (int i = 0; i < descriptors_1.rows; i++)
     {
         double dist = match[i].distance;
@@ -136,24 +138,24 @@ void find_feature_matches(const Mat &img_1, const Mat &img_2,
 
 Point2d pixel2cam(const Point2d &p, const Mat &K)
 {
-    return Point2d(
-        (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
-        (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1));
+    return Point2d((p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
+                   (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1));
 }
 
-void bundleAdjustment(
-    const vector<Point3f> points_3d,
-    const vector<Point2f> points_2d,
-    const Mat &K,
-    Mat &R, Mat &t)
+void bundleAdjustment(const vector<Point3f> points_3d,
+                      const vector<Point2f> points_2d, const Mat &K, Mat &R,
+                      Mat &t)
 {
     // 初始化g2o
     // 6:优化变量维度指的是Pose
     // 3:误差值维度，这里是landmark三维点
-    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> Block;                                  // pose 维度为 6, landmark 维度为 3
-    Block::LinearSolverType *linearSolver = new g2o::LinearSolverCSparse<Block::PoseMatrixType>(); // 线性方程求解器
-    Block *solver_ptr = new Block(linearSolver);                                                   // 矩阵块求解器
-    g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>>
+        Block; // pose 维度为 6, landmark 维度为 3
+    Block::LinearSolverType *linearSolver =
+        new g2o::LinearSolverCSparse<Block::PoseMatrixType>(); // 线性方程求解器
+    Block *solver_ptr = new Block(linearSolver);               // 矩阵块求解器
+    g2o::OptimizationAlgorithmLevenberg *solver =
+        new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     // 创建稀疏优化器
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
@@ -165,9 +167,9 @@ void bundleAdjustment(
         R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2),
         R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2);
     pose->setId(0);
-    pose->setEstimate(g2o::SE3Quat(
-        R_mat,
-        Eigen::Vector3d(t.at<double>(0, 0), t.at<double>(1, 0), t.at<double>(2, 0))));
+    pose->setEstimate(g2o::SE3Quat(R_mat, Eigen::Vector3d(t.at<double>(0, 0),
+                                                          t.at<double>(1, 0),
+                                                          t.at<double>(2, 0))));
     optimizer.addVertex(pose);
 
     int index = 1;
@@ -183,7 +185,8 @@ void bundleAdjustment(
 
     // parameter: camera intrinsics
     g2o::CameraParameters *camera = new g2o::CameraParameters(
-        K.at<double>(0, 0), Eigen::Vector2d(K.at<double>(0, 2), K.at<double>(1, 2)), 0);
+        K.at<double>(0, 0),
+        Eigen::Vector2d(K.at<double>(0, 2), K.at<double>(1, 2)), 0);
     camera->setId(0);
     optimizer.addParameter(camera);
 
@@ -193,7 +196,8 @@ void bundleAdjustment(
     {
         g2o::EdgeProjectXYZ2UV *edge = new g2o::EdgeProjectXYZ2UV();
         edge->setId(index);
-        edge->setVertex(0, dynamic_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(index)));
+        edge->setVertex(
+            0, dynamic_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(index)));
         edge->setVertex(1, pose);
         edge->setMeasurement(Eigen::Vector2d(p.x, p.y));
         edge->setParameterId(0, 0);
@@ -207,8 +211,10 @@ void bundleAdjustment(
     optimizer.initializeOptimization();
     optimizer.optimize(100);
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-    chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-    cout << "optimization costs time: " << time_used.count() << " seconds." << endl;
+    chrono::duration<double> time_used =
+        chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+    cout << "optimization costs time: " << time_used.count() << " seconds."
+         << endl;
 
     cout << endl
          << "after optimization:" << endl;

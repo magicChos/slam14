@@ -44,6 +44,7 @@ void BuildProblem(const BALProblem *bal_problem, g2o::SparseOptimizer *optimizer
 {
     // 路标点数量
     const int num_points = bal_problem->num_points();
+    // 相机数量
     const int num_cameras = bal_problem->num_cameras();
     // 9 or 10
     const int camera_block_size = bal_problem->camera_block_size();
